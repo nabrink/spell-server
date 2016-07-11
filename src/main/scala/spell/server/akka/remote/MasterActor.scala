@@ -3,7 +3,7 @@ package spell.server.akka.remote
 import java.io.File
 import akka.actor._
 import com.typesafe.config.ConfigFactory
-import spell.server.akka.misc._
+import spell.misc._
 
 class MasterActor extends Actor {
   var games:List[ActorRef] = List()

@@ -1,7 +1,7 @@
 package spell.server.akka.remote
 
 import java.io.File
-import spell.server.akka.misc._
+import spell.misc._
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import scala.io.Source

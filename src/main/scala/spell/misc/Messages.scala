@@ -1,4 +1,4 @@
-package spell.server.akka.misc
+package spell.misc
 
 import akka.actor._
 
