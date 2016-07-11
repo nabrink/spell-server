@@ -4,12 +4,21 @@ import java.io.File
 import spell.server.akka.misc._
 import akka.actor._
 import com.typesafe.config.ConfigFactory
+import scala.io.Source
 
-class RemoteActor extends Actor {
+class GameServer extends Actor {
   var players:List[ActorRef] = List()
+  lazy val dict = readFile("src/main/res/words.txt")
+
+  def readFile(fileName:String):List[String] = {
+    var list:List[String] = List()
+    for(line <- Source.fromFile(fileName).getLines){
+      list = line.toUpperCase() :: list
+    }
+    list
+  }
 
   override def receive: Receive = {
-
     case Disconnect(player) =>
       println(s"#\t$player disconnected")
 

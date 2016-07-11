@@ -29,18 +29,17 @@ class MasterActor extends Actor {
   }
 
   def createGame(servername:String):GameMessage = {
-    val remote = context.system.actorOf(Props[RemoteActor], name=servername)
-    games = remote :: games
-    RequestApproved(remote)
+    val game = context.system.actorOf(Props[GameServer], name=servername)
+    games = game :: games
+    RequestApproved(game)
   }
 }
 
 object MasterActor{
   def main(args: Array[String]) {
-    val configFile = getClass.getClassLoader.getResource("remote_application.conf").getFile
-    val config = ConfigFactory.parseFile(new File(configFile))
+    val config = ConfigFactory.load()
     val system = ActorSystem("MasterSystem" , config)
-    val remote = system.actorOf(Props[MasterActor], name="master")
+    val game = system.actorOf(Props[GameServer], name="master")
     println("#\tmaster is ready")
   }
 }
