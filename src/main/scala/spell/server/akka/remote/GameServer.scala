@@ -18,6 +18,10 @@ class GameServer extends Actor {
     list
   }
 
+  override def preStart(): Unit = {
+    
+  }
+
   override def receive: Receive = {
     case Disconnect(player) =>
       println(s"#\t$player disconnected")
