@@ -23,7 +23,7 @@ class MasterActor extends Actor {
       sender ! RequestApproved(game)
 
     case RequestHost(servername) =>
-    val name = sender.path.name
+      val name = sender.path.name
       println(s"#\t[$name] creating game...")
       sender ! createGame(servername)
   }
@@ -39,7 +39,7 @@ object MasterActor{
   def main(args: Array[String]) {
     val config = ConfigFactory.load()
     val system = ActorSystem("MasterSystem" , config)
-    val game = system.actorOf(Props[GameServer], name="master")
+    val game = system.actorOf(Props[MasterActor], name="master")
     println("#\tmaster is ready")
   }
 }
