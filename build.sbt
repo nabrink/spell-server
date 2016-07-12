@@ -7,8 +7,8 @@ scalaVersion := "2.11.8"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-libraryDependencies +=
-  "com.typesafe.akka" %% "akka-actor" % "2.4.6"
-
-libraryDependencies +=
-  "com.typesafe.akka" %% "akka-remote" % "2.4.6"
+libraryDependencies ++= Seq (
+  "com.typesafe.akka" %% "akka-actor" % "2.4.6",
+  "com.typesafe.akka" %% "akka-remote" % "2.4.6",
+  "joda-time" % "joda-time"  % "2.9.3"
+)
