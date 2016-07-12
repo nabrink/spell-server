@@ -36,7 +36,7 @@ class GameServer extends Actor {
       }
 
       println(s"#\t[$serverName] players: " + players.size)
-      broadcastPlayerConnect(player)
+      broadcastPlayerConnect(players)
 
     case Disconnect(player) =>
       println(s"#\t$player disconnected")
@@ -110,8 +110,8 @@ class GameServer extends Actor {
     players.foreach(p => p._1 ! PlayerReady(player))
   }
 
-  def broadcastPlayerConnect(player: ActorRef): Unit = {
-    players.foreach(p => p._1 ! PlayerConnected(player))
+  def broadcastPlayerConnect(ps: List[ActorRef]): Unit = {
+    players.foreach(p => p._1 ! PlayerConnected(ps))
   }
 
   def broadcastWordEngaged(player: ActorRef, word: GlobalWord): Unit = {
