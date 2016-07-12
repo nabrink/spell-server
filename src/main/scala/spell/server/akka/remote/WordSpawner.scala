@@ -18,10 +18,8 @@ class WordSpawner extends Actor {
     case RequestWord(delay) =>
     if (canSpawnWord) {
       val word = getRandomWord()
-
       words = word :: words
       Thread.sleep(delay)
-      println(s"Spawned word $word")
       sender ! WordResponse(word)
     } else {
       sender ! OutOfWords()

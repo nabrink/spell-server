@@ -17,17 +17,18 @@ case class PlayerConnected(player:ActorRef) extends GameMessage
 case class PlayerDisconnected(player:ActorRef) extends GameMessage
 case class StartGame() extends GameMessage
 case class EndGame() extends GameMessage
+case class EngagedWord(player: ActorRef, word: GlobalWord) extends GameMessage
+case class FinishedWord(player: ActorRef, word: GlobalWord) extends GameMessage
 
 sealed trait GameEntity
 case class GlobalWord(id:UUID, text:String) extends GameEntity
 
 sealed trait GameEvent
 case class SpawnWord(w:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
-case class EngagedWord(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
-case class FinishedWord(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
+case class WordEngaged(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
+case class WordDenied(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
 case class WordWinner(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
 case class GameEnded() extends GameEvent
-
 
 /*
 Client stuff
