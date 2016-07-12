@@ -59,7 +59,7 @@ class GameServer extends Actor {
     case FinishedWord(player, word) =>
       engagedWords = removeByWord(word)
       println(s"The following word is finished $word")
-      println(s"Current engaged words $engagedWords")
+      updatePlayerScore(player, word)
       broadcastWordWinner(player, word)
 
     case WordResponse(word) =>
@@ -70,11 +70,25 @@ class GameServer extends Actor {
       println("No more words!")
 
     case Ready(player: ActorRef) =>
-      val p = players get player
-      players += (player -> Player(player, p.get.score, true))
+      players get player match {
+        case Some(p: Player) => players += (player -> Player(player, p.score, true))
+        case _ => println("No player found")
+      }
+
       println(s"Player $player is ready")
       broadcastPlayerRead(player)
       if (checkIfAllReady) self ! StartGame()
+  }
+
+  def updatePlayerScore(player: ActorRef, word: GlobalWord): Unit = {
+    players get player match {
+      case Some(p: Player) => players += (player -> Player(player, getScoreForWord(word), p.ready))
+      case _ => println("No player found")
+    }
+  }
+
+  def getScoreForWord(word: GlobalWord): Int = {
+    word.text.length
   }
 
   def checkIfAllReady(): Boolean = {
