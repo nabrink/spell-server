@@ -36,7 +36,7 @@ class GameServer extends Actor {
       }
 
       println(s"#\t[$serverName] players: " + players.size)
-      broadcastPlayerConnect(players)
+      broadcastPlayerConnect(players.toList)
 
     case Disconnect(player) =>
       println(s"#\t$player disconnected")
