@@ -13,8 +13,6 @@ case class RequestApproved(game:ActorRef) extends GameMessage
 case class RequestDenied(game:ActorRef) extends GameMessage
 case class Connect(player:ActorRef) extends GameMessage
 case class Disconnect(player:ActorRef) extends GameMessage
-case class PlayerConnected(player:ActorRef) extends GameMessage
-case class PlayerDisconnected(player:ActorRef) extends GameMessage
 case class StartGame() extends GameMessage
 case class EndGame() extends GameMessage
 case class EngagedWord(player: ActorRef, word: GlobalWord) extends GameMessage
@@ -33,6 +31,8 @@ case class WordWinner(player:ActorRef, word:GlobalWord, timestamp:DateTime = Dat
 case class GameEnded() extends GameEvent
 case class PlayerReady(player: ActorRef, timestamp: DateTime = DateTime.now) extends GameEvent
 case class ScoreUpdated(player: ActorRef, score: Int, timestamp: DateTime = DateTime.now) extends GameEvent
+case class PlayerConnected(player:ActorRef) extends GameEvent
+case class PlayerDisconnected(player:ActorRef) extends GameEvent
 
 /*
 Client stuff
