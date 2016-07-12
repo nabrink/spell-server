@@ -69,10 +69,11 @@ class GameServer extends Actor {
     case OutOfWords() =>
       println("No more words!")
 
-
     case Ready(player: ActorRef) =>
       val p = players get player
       players += (player -> Player(player, p.get.score, true))
+      println(s"Player $player is ready")
+      broadcastPlayerRead(player)
       if (checkIfAllReady) self ! StartGame()
   }
 
@@ -82,6 +83,10 @@ class GameServer extends Actor {
 
   def removeByWord(word: GlobalWord): Map[ActorRef, GlobalWord] = {
     engagedWords.filter(_._2.text != word.text)
+  }
+
+  def broadcastPlayerRead(player: ActorRef): Unit = {
+    players.foreach(p => p._1 ! PlayerReady(player))
   }
 
   def broadcastPlayerConnect(player: ActorRef): Unit = {
