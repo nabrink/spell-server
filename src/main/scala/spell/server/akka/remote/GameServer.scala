@@ -8,44 +8,22 @@ import com.typesafe.config.ConfigFactory
 import scala.io.Source
 
 class GameServer extends Actor {
-  val spawnInterval: Int = 1000
   var players: List[ActorRef] = List()
-  lazy val dict = readFile("src/main/res/words.txt")
   var words: List[GlobalWord] = List()
-  var gameStarted: Boolean = false
-
-  def readFile(fileName:String):List[String] = {
-    var list: List[String] = List()
-    for(line <- Source.fromFile(fileName).getLines){
-      list = line.toUpperCase() :: list
-    }
-    list
-  }
-
-  def isUnique(s:String, list:List[GlobalWord]):Boolean = list match {
-    case x::xs if x.text(0) equals s(0) => false
-    case x::xs => isUnique(s, xs)
-    case _ => true
-  }
-
-  def canSpawnWord():Boolean = {
-    !dict.filter(w => isUnique(w, words)).isEmpty
-  }
-
-  def getRandomWord(): GlobalWord = {
-    val list:List[String] = dict.filter(w => isUnique(w, words))
-    val random = scala.util.Random
-    if(list.isEmpty) null else GlobalWord(UUID.randomUUID(), list(random.nextInt(list.size)))
-  }
+  var spawner:ActorRef = _
+  val spawnInterval: Int = 1000
+  var gameStarted = false
 
   override def receive: Receive = {
     case StartGame() =>
-      println("Game started!")
       gameStarted = true
-      gameLoop()
+      spawner = context.system.actorOf(Props[WordSpawner], name="spawner")
+      spawner ! RequestWord(spawnInterval)
 
     case EndGame() =>
+      println("Game end request")
       gameStarted = false
+      broadcastEndGame()
 
     case Disconnect(player) =>
       println(s"#\t$player disconnected")
@@ -65,21 +43,23 @@ class GameServer extends Actor {
 
       println(s"#\t[$serverName] players: " + players.size)
       players.foreach(p => p ! PlayerConnected(player))
-  }
 
-  def gameLoop(): Unit = {
-    while(gameStarted) {
-      Thread.sleep(spawnInterval)
-      if (canSpawnWord) {
-        val word = getRandomWord()
-        words = word :: words
-        println(s"sending $word.text")
-        broadcastWord(word)
-      }
-    }
+
+    case WordResponse(word) =>
+      println(s"Broadcasting $word")
+      broadcastWord(word)
+      if (gameStarted) spawner ! RequestWord(spawnInterval)
+
+    case OutOfWords() =>
+      println("No more words!")
   }
 
   def broadcastWord(word: GlobalWord): Unit = {
     players.foreach(p => p ! SpawnWord(word))
+  }
+
+  def broadcastEndGame(): Unit = {
+    players.foreach(p => p ! GameEnded())
+    println("Game ended!")
   }
 }

@@ -10,5 +10,6 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
 libraryDependencies ++= Seq (
   "com.typesafe.akka" %% "akka-actor" % "2.4.6",
   "com.typesafe.akka" %% "akka-remote" % "2.4.6",
-  "joda-time" % "joda-time"  % "2.9.3"
+  "joda-time" % "joda-time"  % "2.9.3",
+  "org.joda" % "joda-convert" % "1.7"
 )

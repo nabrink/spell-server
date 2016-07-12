@@ -26,3 +26,14 @@ case class SpawnWord(w:GlobalWord, timestamp:DateTime = DateTime.now) extends Ga
 case class EngagedWord(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
 case class FinishedWord(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
 case class WordWinner(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
+case class GameEnded() extends GameEvent
+
+
+/*
+Client stuff
+*/
+
+sealed trait ServerMessage
+case class RequestWord(delay: Int) extends ServerMessage
+case class WordResponse(word: GlobalWord) extends ServerMessage
+case class OutOfWords() extends ServerMessage
