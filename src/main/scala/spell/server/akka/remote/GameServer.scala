@@ -26,15 +26,8 @@ class GameServer extends Actor {
       gameStarted = false
       broadcastEndGame()
 
-    case Disconnect(player) =>
-      println(s"#\t$player disconnected")
-
-    case _:Terminated =>
-      println(s"#\t$sender disconnected")
-      context stop sender
-
     case Connect(player:ActorRef) =>
-      players += (player -> Player(player, 0))
+      players += (player -> Player(player, 0, false))
       val serverName = self.path.name
       if(players.size == 1) {
         context.watch(player)
@@ -44,6 +37,13 @@ class GameServer extends Actor {
 
       println(s"#\t[$serverName] players: " + players.size)
       broadcastPlayerConnect(player)
+
+    case Disconnect(player) =>
+      println(s"#\t$player disconnected")
+
+    case _:Terminated =>
+      println(s"#\t$sender disconnected")
+      context stop sender
 
     case EngagedWord(player, word) =>
       if (!engagedWords.contains(player)) {
@@ -68,6 +68,16 @@ class GameServer extends Actor {
 
     case OutOfWords() =>
       println("No more words!")
+
+
+    case Ready(player: ActorRef) =>
+      val p = players get player
+      players += (player -> Player(player, p.get.score, true))
+      if (checkIfAllReady) self ! StartGame()
+  }
+
+  def checkIfAllReady(): Boolean = {
+    players.forall(_._2.ready)
   }
 
   def removeByWord(word: GlobalWord): Map[ActorRef, GlobalWord] = {

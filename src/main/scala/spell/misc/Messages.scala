@@ -19,6 +19,8 @@ case class StartGame() extends GameMessage
 case class EndGame() extends GameMessage
 case class EngagedWord(player: ActorRef, word: GlobalWord) extends GameMessage
 case class FinishedWord(player: ActorRef, word: GlobalWord) extends GameMessage
+case class Ready(player:ActorRef) extends GameMessage
+case class UnReady(player:ActorRef) extends GameMessage
 
 sealed trait GameEntity
 case class GlobalWord(id:UUID, text:String) extends GameEntity
