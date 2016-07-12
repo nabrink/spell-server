@@ -83,7 +83,7 @@ class GameServer extends Actor {
   def updatePlayerScore(player: ActorRef, word: GlobalWord): Unit = {
     val newScore = getScoreForWord(word)
     players get player match {
-      case Some(p: Player) => players += (player -> Player(player, newScore, p.ready))
+      case Some(p: Player) => players += (player -> Player(player, p.score + newScore, p.ready))
       case _ => println("No player found")
     }
 
