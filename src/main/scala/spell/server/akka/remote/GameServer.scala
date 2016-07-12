@@ -81,10 +81,13 @@ class GameServer extends Actor {
   }
 
   def updatePlayerScore(player: ActorRef, word: GlobalWord): Unit = {
+    val newScore = getScoreForWord(word)
     players get player match {
-      case Some(p: Player) => players += (player -> Player(player, getScoreForWord(word), p.ready))
+      case Some(p: Player) => players += (player -> Player(player, newScore, p.ready))
       case _ => println("No player found")
     }
+
+    broadcastScoreUpdated(player, newScore)
   }
 
   def getScoreForWord(word: GlobalWord): Int = {
@@ -97,6 +100,10 @@ class GameServer extends Actor {
 
   def removeByWord(word: GlobalWord): Map[ActorRef, GlobalWord] = {
     engagedWords.filter(_._2.text != word.text)
+  }
+
+  def broadcastScoreUpdated(player: ActorRef, score: Int): Unit = {
+    players.foreach(p => p._1 ! ScoreUpdated(player, score))
   }
 
   def broadcastPlayerRead(player: ActorRef): Unit = {
