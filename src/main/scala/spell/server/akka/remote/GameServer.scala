@@ -39,11 +39,12 @@ class GameServer extends Actor {
   }
 
   override def receive: Receive = {
-    case StartGame =>
+    case StartGame() =>
+      println("Game started!")
       gameStarted = true
       gameLoop()
 
-    case EndGame =>
+    case EndGame() =>
       gameStarted = false
 
     case Disconnect(player) =>
@@ -72,6 +73,7 @@ class GameServer extends Actor {
       if (canSpawnWord) {
         val word = getRandomWord()
         words = word :: words
+        println(s"sending $word.text")
         broadcastWord(word)
       }
     }
