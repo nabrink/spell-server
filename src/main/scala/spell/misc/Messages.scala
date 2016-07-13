@@ -34,6 +34,7 @@ case class ScoreUpdated(player: ActorRef, score: Int, timestamp: DateTime = Date
 case class PlayersConnected(players:List[ActorRef]) extends GameEvent
 case class PlayerDisconnected(player:ActorRef) extends GameEvent
 case class ServerList(list:List[ActorRef]) extends GameEvent
+case class StatsList(list: List[PlayerStats]) extends GameEvent
 
 /*
 Client stuff

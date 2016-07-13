@@ -3,6 +3,7 @@ package spell.misc
 import akka.actor._
 
 case class Player(playerRef: ActorRef, score: Int, ready: Boolean)
+case class PlayerStats(player: ActorRef, score: Int)
 
 sealed trait GameState
 case object Lobby extends GameState

@@ -8,7 +8,6 @@ import com.typesafe.config.ConfigFactory
 import scala.io.Source
 
 class GameServer extends Actor with FSM[GameState, GameData] {
-
   startWith(Lobby, LobbyData(Map()))
 
   onTransition {
@@ -45,9 +44,8 @@ class GameServer extends Actor with FSM[GameState, GameData] {
   }
 
   when(GameOver) {
-    case Event(GetStats, _) =>
-      println("Stats!")
-      stay
+    case Event(GetStats, s: Stats) =>
+      handleGetStats(s)
   }
 
   initialize()
@@ -56,13 +54,13 @@ class GameServer extends Actor with FSM[GameState, GameData] {
     println(s"Player ${player.path.name} is ready")
 
     if (everyoneIsReady(player, players)) {
-      broadcastPlayerReady(player, players)
+      broadcastEvent(PlayerReady(player))(players)
       goto(GameRunning) using GameSessionData(players, Map(), List(),
           context.system.actorOf(Props[WordSpawner], name="spawner"))
     } else {
       players get player match {
         case Some(p: Player) => {
-          broadcastPlayerReady(player, players)
+          broadcastEvent(PlayerReady(player))(players)
           stay using LobbyData(players = players + (player -> Player(player, p.score, true)))
         }
         case _ => stay
@@ -73,13 +71,13 @@ class GameServer extends Actor with FSM[GameState, GameData] {
   def handlePlayerConnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
     println(s"#\t${player.path.name} connected")
     val newPlayersList = data.players + (player -> Player(player, 0, false))
-    broadcastPlayersConnected(newPlayersList)
+    broadcastEvent(PlayersConnected(data.players.keys.toList))(data.players)
     stay using data.copy(players = newPlayersList)
   }
 
   def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
     println(s"#\t${player.path.name} disconnected")
-    broadcastPlayerDisconnect(player, data.players)
+    broadcastEvent(PlayerDisconnected(player))(data.players)
     stay using data.copy(players = data.players - player)
   }
 
@@ -91,7 +89,7 @@ class GameServer extends Actor with FSM[GameState, GameData] {
   def handleEngagedWord(player: ActorRef, word: GlobalWord, data: GameSessionData): GameServer.this.State = {
     if (!data.engagedWords.contains(player)) {
       println(s"The word ${word.text} is engaged by ${player.path.name}")
-      broadcastWordEngaged(player, word, data.players)
+      broadcastEvent(WordEngaged(player, word))(data.players)
       println(s"Current engaged words ${data.engagedWords}")
       stay using data.copy(engagedWords = data.engagedWords + (player -> word))
     } else {
@@ -102,7 +100,7 @@ class GameServer extends Actor with FSM[GameState, GameData] {
   }
 
   def handleWordResponse(word: GlobalWord, data: GameSessionData): GameServer.this.State = {
-    broadcastWord(word, data.players)
+    broadcastEvent(SpawnWord(word))(data.players)
     data.spawner ! RequestWord(1000)
     stay using data.copy(words = word :: data.words)
   }
@@ -114,20 +112,30 @@ class GameServer extends Actor with FSM[GameState, GameData] {
 
   def handleFinishedWord(player: ActorRef, word: GlobalWord, data: GameSessionData): GameServer.this.State = {
     println(s"The following word is finished ${word.text}")
-    broadcastWordWinner(player, word, data.players)
+    broadcastEvent(WordWinner(player, word))(data.players)
     stay using data.copy(engagedWords = removeByWord(word, data.engagedWords),
                                players = updatePlayerScore(player, word, data.players))
   }
 
   def handleEndGame(players: Map[ActorRef, Player]): GameServer.this.State = {
-    broadcastEndGame(players)
+    broadcastEvent(GameEnded())(players)
     println("Game ended!")
     goto(GameOver) using Stats(players)
   }
 
+  def handleGetStats(stats: Stats): GameServer.this.State = {
+    val statsList = stats.players.values.map(playerToPlayerStats).toList
+    sender ! StatsList(statsList)
+    stay
+  }
+
+  def playerToPlayerStats(player: Player): PlayerStats = {
+    PlayerStats(player.playerRef, player.score)
+  }
+
   def updatePlayerScore(player: ActorRef, word: GlobalWord, players: Map[ActorRef, Player]): Map[ActorRef, Player] = {
     val newScore = getScoreForWord(word)
-    broadcastScoreUpdated(player, newScore, players)
+    broadcastEvent(ScoreUpdated(player, newScore))(players)
     val p: Player = players get player match {
       case Some(x: Player) => x
       case _ => null
@@ -149,35 +157,7 @@ class GameServer extends Actor with FSM[GameState, GameData] {
     engagedWords.filter(_._2.text != word.text)
   }
 
-  def broadcastScoreUpdated(player: ActorRef, score: Int, players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! ScoreUpdated(player, score))
-  }
-
-  def broadcastPlayerReady(player: ActorRef, players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! PlayerReady(player))
-  }
-
-  def broadcastPlayersConnected(players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! PlayersConnected(players.keys.toList))
-  }
-
-  def broadcastPlayerDisconnect(player: ActorRef, players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! PlayerDisconnected(player))
-  }
-
-  def broadcastWordEngaged(player: ActorRef, word: GlobalWord, players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! WordEngaged(player, word))
-  }
-
-  def broadcastWordWinner(player: ActorRef, word: GlobalWord, players: Map[ActorRef, Player]) = {
-    players.foreach(p => p._1 ! WordWinner(player, word))
-  }
-
-  def broadcastWord(word: GlobalWord, players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! SpawnWord(word))
-  }
-
-  def broadcastEndGame(players: Map[ActorRef, Player]): Unit = {
-    players.foreach(p => p._1 ! GameEnded())
+  def broadcastEvent(event: GameEvent)(players: Map[ActorRef, Player]): Unit = {
+    players.foreach(p => p._1 ! event)
   }
 }
