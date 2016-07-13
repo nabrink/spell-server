@@ -10,10 +10,6 @@ import scala.io.Source
 class GameServer extends Actor with FSM[GameState, GameData] {
   startWith(Lobby, LobbyData(Map()))
 
-  onTransition {
-    case Lobby -> GameRunning => self ! StartGameLoop(1000)
-  }
-
   when(Lobby) {
     case Event(Connect(player), data: LobbyData) =>
       handlePlayerConnect(player, data)
@@ -23,12 +19,13 @@ class GameServer extends Actor with FSM[GameState, GameData] {
       handlePlayerReady(player, players)
   }
 
+  onTransition {
+    case Lobby -> GameRunning => self ! StartGameLoop(1000)
+  }
+
   when(GameRunning) {
     case Event(StartGameLoop(delay), GameSessionData(_, _, _, spawner)) =>
       handleStartGameLoop(spawner, delay)
-
-    case Event(EndGame(), GameSessionData(players, _, _, _)) =>
-      handleEndGame(players)
 
     case Event(EngagedWord(player, word), data: GameSessionData) =>
       handleEngagedWord(player, word, data)
@@ -41,10 +38,13 @@ class GameServer extends Actor with FSM[GameState, GameData] {
 
     case Event(OutOfWords(), _) =>
       handleOutOfWords()
+
+    case Event(EndGame(), GameSessionData(players, _, _, _)) =>
+      handleEndGame(players)
   }
 
   when(GameOver) {
-    case Event(GetStats, s: Stats) =>
+    case Event(GetStats(), s: Stats) =>
       handleGetStats(s)
   }
 
@@ -90,7 +90,6 @@ class GameServer extends Actor with FSM[GameState, GameData] {
     if (!data.engagedWords.contains(player)) {
       println(s"The word ${word.text} is engaged by ${player.path.name}")
       broadcastEvent(WordEngaged(player, word))(data.players)
-      println(s"Current engaged words ${data.engagedWords}")
       stay using data.copy(engagedWords = data.engagedWords + (player -> word))
     } else {
       sender ! WordDenied(player, word)
@@ -125,6 +124,7 @@ class GameServer extends Actor with FSM[GameState, GameData] {
 
   def handleGetStats(stats: Stats): GameServer.this.State = {
     val statsList = stats.players.values.map(playerToPlayerStats).toList
+    println(s"Sending the following statslist: $statsList")
     sender ! StatsList(statsList)
     stay
   }
