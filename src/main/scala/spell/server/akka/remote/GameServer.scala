@@ -52,12 +52,14 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
 
   def handlePlayerConnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
     if (data.players.size + 1 > settings.maxPlayers) {
-      sender ! ConnectionRefused("Server is full.")
+      player ! ConnectionRefused("Server is full.")
       stay
     } else {
       println(s"#\t${player.path.name} connected")
       val newPlayersList = data.players + (player -> Player(player, 0, false))
-      broadcastEvent(PlayersConnected(newPlayersList.keys.toList))(newPlayersList)
+      player ! ConnectionGranted("You made it!")
+      broadcastEvent(PlayerConnected(player))(newPlayersList)
+      broadcastEvent(PlayerList(newPlayersList.keys.toList))(newPlayersList)
       stay using data.copy(players = newPlayersList)
     }
   }
