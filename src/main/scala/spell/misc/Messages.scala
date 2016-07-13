@@ -19,6 +19,7 @@ case class EngagedWord(player: ActorRef, word: GlobalWord) extends GameMessage
 case class FinishedWord(player: ActorRef, word: GlobalWord) extends GameMessage
 case class Ready(player:ActorRef) extends GameMessage
 case class UnReady(player:ActorRef) extends GameMessage
+case class GetStats() extends GameMessage
 
 sealed trait GameEntity
 case class GlobalWord(id:UUID, text:String) extends GameEntity
@@ -31,7 +32,7 @@ case class WordWinner(player:ActorRef, word:GlobalWord, timestamp:DateTime = Dat
 case class GameEnded() extends GameEvent
 case class PlayerReady(player: ActorRef, timestamp: DateTime = DateTime.now) extends GameEvent
 case class ScoreUpdated(player: ActorRef, score: Int, timestamp: DateTime = DateTime.now) extends GameEvent
-case class PlayerConnected(players:List[ActorRef]) extends GameEvent
+case class PlayersConnected(players:List[ActorRef]) extends GameEvent
 case class PlayerDisconnected(player:ActorRef) extends GameEvent
 
 /*
@@ -42,3 +43,4 @@ sealed trait ServerMessage
 case class RequestWord(delay: Int) extends ServerMessage
 case class WordResponse(word: GlobalWord) extends ServerMessage
 case class OutOfWords() extends ServerMessage
+case class StartGameLoop(delay: Int) extends ServerMessage
