@@ -29,6 +29,7 @@ case class SpawnWord(w:GlobalWord, timestamp:DateTime = DateTime.now) extends Ga
 case class WordEngaged(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
 case class WordDenied(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
 case class WordWinner(player:ActorRef, word:GlobalWord, timestamp:DateTime = DateTime.now) extends GameEvent
+case class GameStarted() extends GameEvent
 case class GameEnded() extends GameEvent
 case class PlayerReady(player:ActorRef, timestamp:DateTime = DateTime.now) extends GameEvent
 case class ScoreUpdated(player:ActorRef, score:Int, timestamp:DateTime = DateTime.now) extends GameEvent

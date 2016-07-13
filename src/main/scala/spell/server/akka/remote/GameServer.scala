@@ -26,8 +26,8 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
   }
 
   when(GameRunning) {
-    case Event(StartGameLoop(delay), GameSessionData(_, _, _, spawner)) =>
-      handleStartGameLoop(spawner, delay)
+    case Event(StartGameLoop(delay), GameSessionData(players, _, _, spawner)) =>
+      handleStartGameLoop(spawner, delay, players)
 
     case Event(EngagedWord(player, word), data: GameSessionData) =>
       handleEngagedWord(player, word, data)
@@ -102,7 +102,8 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     stay
   }
 
-  def handleStartGameLoop(spawner: ActorRef, delay: Int): GameServer.this.State = {
+  def handleStartGameLoop(spawner: ActorRef, delay: Int, players:Map[ActorRef, Player]): GameServer.this.State = {
+    broadcastEvent(GameStarted())(players)
     spawner ! RequestWord(delay)
     stay
   }
