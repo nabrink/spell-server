@@ -7,7 +7,7 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import scala.io.Source
 
-class GameServer extends Actor with FSM[GameState, GameData] {
+class GameServer(settings: ServerSettings) extends Actor with FSM[GameState, GameData] {
   startWith(Lobby, LobbyData(Map()))
 
   when(Lobby) {
@@ -69,10 +69,15 @@ class GameServer extends Actor with FSM[GameState, GameData] {
   }
 
   def handlePlayerConnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
-    println(s"#\t${player.path.name} connected")
-    val newPlayersList = data.players + (player -> Player(player, 0, false))
-    broadcastEvent(PlayersConnected(data.players.keys.toList))(data.players)
-    stay using data.copy(players = newPlayersList)
+    if (data.players.size + 1 > settings.maxPlayers) {
+      sender ! ConnectionRefused("Server is full.")
+      stay
+    } else {
+      println(s"#\t${player.path.name} connected")
+      val newPlayersList = data.players + (player -> Player(player, 0, false))
+      broadcastEvent(PlayersConnected(data.players.keys.toList))(data.players)
+      stay using data.copy(players = newPlayersList)
+    }
   }
 
   def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
@@ -124,7 +129,7 @@ class GameServer extends Actor with FSM[GameState, GameData] {
 
   def handleGetStats(stats: Stats): GameServer.this.State = {
     val statsList = stats.players.values.map(playerToPlayerStats).toList
-    println(s"Sending the following statslist: $statsList")
+    statsList.foreach(s => println(s"\t"))
     sender ! StatsList(statsList)
     stay
   }

@@ -22,14 +22,13 @@ class MasterActor extends Actor {
       println(s"#\tplayer $name APPROVED to join " + game.path.name)
       sender ! RequestApproved(game)
 
-    case RequestHost(servername) =>
-      val name = sender.path.name
-      println(s"#\t[$name] creating game...")
-      sender ! createGame(servername)
+    case RequestHost(settings) =>
+      println(s"#\t[${settings.name}] creating game...")
+      sender ! createGame(settings)
   }
 
-  def createGame(servername:String):GameMessage = {
-    val game = context.system.actorOf(Props[GameServer], name=servername)
+  def createGame(settings: ServerSettings):GameMessage = {
+    val game = context.system.actorOf(Props(classOf[GameServer], settings), name=settings.name)
     games = game :: games
     RequestApproved(game)
   }
