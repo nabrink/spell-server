@@ -7,7 +7,7 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import scala.io.Source
 
-class GameServer(settings: ServerSettings) extends Actor with FSM[GameState, GameData] {
+class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with FSM[GameState, GameData] {
   startWith(Lobby, LobbyData(Map()))
 
   when(Lobby) {
@@ -81,9 +81,16 @@ class GameServer(settings: ServerSettings) extends Actor with FSM[GameState, Gam
   }
 
   def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
-    println(s"#\t${player.path.name} disconnected")
-    broadcastEvent(PlayerDisconnected(player))(data.players)
-    stay using data.copy(players = data.players - player)
+    if (player == settings.host) {
+      broadcastEvent(ServerShutdown("Host has left. Shutting down."))(data.players)
+      Thread.sleep(2000)
+      master ! ShutdownServer(self)
+      stay
+    } else {
+      println(s"#\t${player.path.name} disconnected")
+      broadcastEvent(PlayerDisconnected(player))(data.players)
+      stay using data.copy(players = data.players - player)
+    }
   }
 
   def handleStartGameLoop(spawner: ActorRef, delay: Int): GameServer.this.State = {

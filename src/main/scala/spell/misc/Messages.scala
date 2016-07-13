@@ -36,6 +36,7 @@ case class PlayerDisconnected(player:ActorRef) extends GameEvent
 case class ConnectionRefused(reason: String) extends GameEvent
 case class ServerList(list:List[ActorRef]) extends GameEvent
 case class StatsList(list:List[PlayerStats]) extends GameEvent
+case class ServerShutdown(reason: String) extends GameEvent
 
 /*
 Client stuff
@@ -46,3 +47,4 @@ case class RequestWord(delay:Int) extends ServerMessage
 case class WordResponse(word:GlobalWord) extends ServerMessage
 case class OutOfWords() extends ServerMessage
 case class StartGameLoop(delay:Int) extends ServerMessage
+case class ShutdownServer(server: ActorRef) extends ServerMessage

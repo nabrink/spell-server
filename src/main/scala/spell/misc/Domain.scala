@@ -4,7 +4,7 @@ import akka.actor._
 
 case class Player(playerRef: ActorRef, score: Int, ready: Boolean)
 case class PlayerStats(player: ActorRef, score: Int)
-case class ServerSettings(name:String, maxPlayers:Int)
+case class ServerSettings(host: ActorRef, name:String, maxPlayers:Int)
 
 sealed trait GameState
 case object Lobby extends GameState

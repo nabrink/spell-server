@@ -13,14 +13,14 @@ class MasterActor extends Actor {
       println(s"#\t$sender disconnected")
       context stop sender
 
+    case ShutdownServer(server: ActorRef) =>
+      println(s"#\tmaster: Shutting down server ${server.path.name}")
+      server ! PoisonPill
+      games = games.filter(_ != server)
+
     case ListServers() =>
       println(s"#\tgames open: " + games.size)
       sender ! ServerList(games)
-
-    case RequestJoin(game) =>
-      val name = sender.path.name
-      println(s"#\tplayer $name APPROVED to join " + game.path.name)
-      sender ! RequestApproved(game)
 
     case RequestHost(settings) =>
       println(s"#\t[${settings.name}] creating game...")
@@ -28,7 +28,7 @@ class MasterActor extends Actor {
   }
 
   def createGame(settings: ServerSettings):GameMessage = {
-    val game = context.system.actorOf(Props(classOf[GameServer], settings), name=settings.name)
+    val game = context.system.actorOf(Props(classOf[GameServer], settings, self), name=settings.name)
     games = game :: games
     RequestApproved(game)
   }
