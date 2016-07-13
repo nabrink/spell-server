@@ -17,6 +17,8 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       handlePlayerDisconnect(player, data)
     case Event(Ready(player), LobbyData(players)) =>
       handlePlayerReady(player, players)
+    case Event(SendMessage(player, message), LobbyData(players)) =>
+      handleMessage(player, message, players)
   }
 
   onTransition {
@@ -67,7 +69,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
   def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
     if (player == settings.host) {
       broadcastEvent(ServerShutdown("Host has left. Shutting down."))(data.players)
-      Thread.sleep(2000)
+      Thread.sleep(1000)
       master ! ShutdownServer(self)
       stay
     } else {
@@ -93,6 +95,11 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
         case _ => stay
       }
     }
+  }
+
+  def handleMessage(player:ActorRef, message:String, players:Map[ActorRef, Player]): GameServer.this.State = {
+    broadcastEvent(MessageReceived(player, message))(players)
+    stay
   }
 
   def handleStartGameLoop(spawner: ActorRef, delay: Int): GameServer.this.State = {

@@ -19,6 +19,7 @@ case class FinishedWord(player:ActorRef, word:GlobalWord) extends GameMessage
 case class Ready(player:ActorRef) extends GameMessage
 case class UnReady(player:ActorRef) extends GameMessage
 case class GetStats() extends GameMessage
+case class SendMessage(player: ActorRef, message: String) extends GameMessage
 
 sealed trait GameEntity
 case class GlobalWord(id: UUID, text:String) extends GameEntity
@@ -39,6 +40,7 @@ case class ConnectionRefused(reason: String) extends GameEvent
 case class ServerList(list:List[ActorRef]) extends GameEvent
 case class StatsList(list:List[PlayerStats]) extends GameEvent
 case class ServerShutdown(reason: String) extends GameEvent
+case class MessageReceived(player: ActorRef, message: String) extends GameEvent
 
 /*
 Client stuff
