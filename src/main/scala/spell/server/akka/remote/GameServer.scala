@@ -50,6 +50,31 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
 
   initialize()
 
+  def handlePlayerConnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
+    if (data.players.size + 1 > settings.maxPlayers) {
+      sender ! ConnectionRefused("Server is full.")
+      stay
+    } else {
+      println(s"#\t${player.path.name} connected")
+      val newPlayersList = data.players + (player -> Player(player, 0, false))
+      broadcastEvent(PlayersConnected(newPlayersList.keys.toList))(newPlayersList)
+      stay using data.copy(players = newPlayersList)
+    }
+  }
+
+  def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
+    if (player == settings.host) {
+      broadcastEvent(ServerShutdown("Host has left. Shutting down."))(data.players)
+      Thread.sleep(2000)
+      master ! ShutdownServer(self)
+      stay
+    } else {
+      println(s"#\t${player.path.name} disconnected")
+      broadcastEvent(PlayerDisconnected(player))(data.players)
+      stay using data.copy(players = data.players - player)
+    }
+  }
+
   def handlePlayerReady(player: ActorRef, players: Map[ActorRef, Player]): GameServer.this.State = {
     println(s"Player ${player.path.name} is ready")
 
@@ -65,31 +90,6 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
         }
         case _ => stay
       }
-    }
-  }
-
-  def handlePlayerConnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
-    if (data.players.size + 1 > settings.maxPlayers) {
-      sender ! ConnectionRefused("Server is full.")
-      stay
-    } else {
-      println(s"#\t${player.path.name} connected")
-      val newPlayersList = data.players + (player -> Player(player, 0, false))
-      broadcastEvent(PlayersConnected(data.players.keys.toList))(data.players)
-      stay using data.copy(players = newPlayersList)
-    }
-  }
-
-  def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
-    if (player == settings.host) {
-      broadcastEvent(ServerShutdown("Host has left. Shutting down."))(data.players)
-      Thread.sleep(2000)
-      master ! ShutdownServer(self)
-      stay
-    } else {
-      println(s"#\t${player.path.name} disconnected")
-      broadcastEvent(PlayerDisconnected(player))(data.players)
-      stay using data.copy(players = data.players - player)
     }
   }
 
