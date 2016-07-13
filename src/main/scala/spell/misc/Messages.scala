@@ -6,7 +6,6 @@ import org.joda.time._
 
 sealed trait GameMessage
 case class ListServers() extends GameMessage
-case class ServerList(list:List[ActorRef]) extends GameMessage
 case class RequestHost(serverName:String) extends GameMessage
 case class RequestJoin(game:ActorRef) extends GameMessage
 case class RequestApproved(game:ActorRef) extends GameMessage
@@ -34,6 +33,7 @@ case class PlayerReady(player: ActorRef, timestamp: DateTime = DateTime.now) ext
 case class ScoreUpdated(player: ActorRef, score: Int, timestamp: DateTime = DateTime.now) extends GameEvent
 case class PlayersConnected(players:List[ActorRef]) extends GameEvent
 case class PlayerDisconnected(player:ActorRef) extends GameEvent
+case class ServerList(list:List[ActorRef]) extends GameEvent
 
 /*
 Client stuff
