@@ -19,6 +19,8 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       handlePlayerReady(player, players)
     case Event(SendMessage(player, message), LobbyData(players)) =>
       handleMessage(player, message, players)
+    case Event(GetServerStatus(), LobbyData(players)) =>
+      handleGetServerStatus("In lobby", players)
   }
 
   onTransition {
@@ -43,14 +45,23 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
 
     case Event(EndGame(), GameSessionData(players, _, _, _)) =>
       handleEndGame(players)
+    case Event(GetServerStatus(), GameSessionData(players, _, _, _)) =>
+      handleGetServerStatus("Game running", players)
   }
 
   when(GameOver) {
     case Event(GetStats(), s: Stats) =>
       handleGetStats(s)
+    case Event(GetServerStatus(), Stats(players)) =>
+      handleGetServerStatus("Game ended", players)
   }
 
   initialize()
+
+  def handleGetServerStatus(status: String, players: Map[ActorRef, Player]): GameServer.this.State = {
+    sender ! ServerStatus(self, players.keys.toList, status, settings.maxPlayers)
+    stay
+  }
 
   def handlePlayerConnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
     if (data.players.size + 1 > settings.maxPlayers) {
