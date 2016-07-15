@@ -96,7 +96,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     if (everyoneIsReady(player, players)) {
       broadcastEvent(PlayerReady(player))(players)
       goto(GameRunning) using GameSessionData(players, Map(), List(),
-          context.system.actorOf(Props[WordSpawner], name="spawner"))
+          context.system.actorOf(Props[WordSpawner], name=s"spawner-${UUID.randomUUID.toString()}"))
     } else {
       players get player match {
         case Some(p: Player) => {
