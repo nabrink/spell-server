@@ -14,7 +14,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     case Event(Connect(player), data: LobbyData) =>
       handlePlayerConnect(player, data)
     case Event(Disconnect(player), data:LobbyData) =>
-      handlePlayerDisconnect(player, data)
+      handleDisconnect(player, data)
     case Event(Ready(player), LobbyData(players)) =>
       handlePlayerReady(player, players)
     case Event(SendMessage(player, message), LobbyData(players)) =>
@@ -55,7 +55,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     case Event(GetServerStatus(), Stats(players)) =>
       handleGetServerStatus("Game ended", players)
     case Event(Disconnect(player), data:Stats) =>
-      handlePlayerDisconnect(player, data)
+      handleDisconnect(player, data)
   }
 
   initialize()
@@ -79,7 +79,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     }
   }
 
-  def handlePlayerDisconnect(player: ActorRef, data: GameData): GameServer.this.State = data match {
+  def handleDisconnect(player: ActorRef, data: GameData): GameServer.this.State = data match {
     case LobbyData(players) if (playerIsHost(player)) =>
       disconnectHost(players)
     case d:LobbyData =>
