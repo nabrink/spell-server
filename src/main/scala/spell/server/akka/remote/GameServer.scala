@@ -13,7 +13,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
   when(Lobby) {
     case Event(Connect(player), data: LobbyData) =>
       handlePlayerConnect(player, data)
-    case Event(Disconnect(player), data: LobbyData) =>
+    case Event(Disconnect(player), data:LobbyData) =>
       handlePlayerDisconnect(player, data)
     case Event(Ready(player), LobbyData(players)) =>
       handlePlayerReady(player, players)
@@ -50,10 +50,12 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
   }
 
   when(GameOver) {
-    case Event(GetStats(), s: Stats) =>
-      handleGetStats(s)
+    case Event(GetStats(), data:Stats) =>
+      handleGetStats(data)
     case Event(GetServerStatus(), Stats(players)) =>
       handleGetServerStatus("Game ended", players)
+    case Event(Disconnect(player), data:Stats) =>
+      handlePlayerDisconnect(player, data)
   }
 
   initialize()
@@ -77,17 +79,32 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     }
   }
 
-  def handlePlayerDisconnect(player: ActorRef, data: LobbyData): GameServer.this.State = {
-    if (player == settings.host) {
-      broadcastEvent(ServerShutdown("Host has left. Shutting down."))(data.players)
-      Thread.sleep(1000)
-      master ! ShutdownServer(self)
-      stay
-    } else {
-      println(s"#\t${player.path.name} disconnected")
-      broadcastEvent(PlayerDisconnected(player))(data.players)
-      stay using data.copy(players = data.players - player)
-    }
+  def handlePlayerDisconnect(player: ActorRef, data: GameData): GameServer.this.State = data match {
+    case LobbyData(players) if (playerIsHost(player)) =>
+      disconnectHost(players)
+    case d:LobbyData =>
+      stay using d.copy(players = disconnectPlayer(player, d.players))
+    case Stats(players) if (playerIsHost(player)) =>
+      disconnectHost(players)
+    case d:Stats =>
+      stay using d.copy(players = disconnectPlayer(player, d.players))
+  }
+
+  def disconnectPlayer(player: ActorRef, players: Map[ActorRef, Player]): Map[ActorRef, Player] = {
+    println(s"#\t${player.path.name} disconnected")
+    broadcastEvent(PlayerDisconnected(player))(players)
+    players - player
+  }
+
+  def disconnectHost(players:Map[ActorRef, Player]): GameServer.this.State = {
+    broadcastEvent(ServerShutdown("Host has left. Shutting down."))(players)
+    Thread.sleep(1000)
+    master ! ShutdownServer(self)
+    stay
+  }
+
+  def playerIsHost(player: ActorRef): Boolean = {
+    player == settings.host
   }
 
   def handlePlayerReady(player: ActorRef, players: Map[ActorRef, Player]): GameServer.this.State = {
