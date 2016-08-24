@@ -32,19 +32,14 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
   when(GameRunning) {
     case Event(StartGameLoop(delay), GameSessionData(players, _, _, spawner)) =>
       handleStartGameLoop(spawner, delay, players)
-
     case Event(EngagedWord(player, word), data: GameSessionData) =>
       handleEngagedWord(player, word, data)
-
     case Event(FinishedWord(player, word), data: GameSessionData) =>
       handleFinishedWord(player, word, data)
-
     case Event(WordResponse(word), data: GameSessionData) =>
       handleWordResponse(word, data)
-
     case Event(OutOfWords(), _) =>
       handleOutOfWords()
-
     case Event(EndGame(), GameSessionData(players, _, _, _)) =>
       handleEndGame(players)
     case Event(GetServerStatus(), GameSessionData(players, _, _, _)) =>
@@ -207,9 +202,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     players + (player -> Player(player, p.score + newScore, p.ready))
   }
 
-  def getScoreForWord(word: GlobalWord): Int = {
-    word.text.length
-  }
+  def getScoreForWord(word: GlobalWord): Int = (word.text.length.toFloat * word.multiplier).toInt
 
   def everyoneIsReady(player: ActorRef, players: Map[ActorRef, Player]): Boolean = {
     val everyoneExceptYou = players.filterKeys(_ != player)
