@@ -12,6 +12,7 @@ case class WordWinner(player:ActorRef, word:GlobalWord, timestamp:DateTime = Dat
 case class GameStarted() extends GameEvent
 case class GameEnded() extends GameEvent
 case class PlayerReady(player:ActorRef, timestamp:DateTime = DateTime.now) extends GameEvent
+case class PlayerUnready(player:ActorRef, timestamp:DateTime = DateTime.now) extends GameEvent
 case class ScoreUpdated(player:ActorRef, score:Int, timestamp:DateTime = DateTime.now) extends GameEvent
 case class PlayerConnected(player:ActorRef) extends GameEvent
 case class PlayerDisconnected(player:ActorRef) extends GameEvent

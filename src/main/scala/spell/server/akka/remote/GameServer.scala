@@ -17,6 +17,8 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       handleDisconnect(player, data)
     case Event(Ready(player), LobbyData(players)) =>
       handlePlayerReady(player, players)
+    case Event(UnReady(player), LobbyData(players)) =>
+      handlePlayerUnready(player, players)
     case Event(SendMessage(player, message), LobbyData(players)) =>
       handleMessage(player, message, players)
     case Event(GetServerStatus(), LobbyData(players)) =>
@@ -122,6 +124,17 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
         }
         case _ => stay
       }
+    }
+  }
+
+  def handlePlayerUnready(player: ActorRef, players: Map[ActorRef, Player]): GameServer.this.State = {
+    println(s"Player ${player.path.name} is not ready anymore")
+    players get player match {
+      case Some(p: Player) => {
+        broadcastEvent(PlayerUnready(player))(players)
+        stay using LobbyData(players = players + (player -> Player(player, p.score, false)))
+      }
+      case _ => stay
     }
   }
 

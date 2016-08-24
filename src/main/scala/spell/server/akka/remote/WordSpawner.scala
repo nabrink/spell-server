@@ -48,6 +48,15 @@ class WordSpawner extends Actor {
   def getRandomWord(): GlobalWord = {
     val list:List[String] = dict.filter(w => isUnique(w, words))
     val random = scala.util.Random
-    if(list.isEmpty) null else GlobalWord(UUID.randomUUID(), list(random.nextInt(list.size)))
+    if(list.isEmpty) null else GlobalWord(UUID.randomUUID(), list(random.nextInt(list.size)), getMultiplier())
+  }
+
+  def getMultiplier(): Float = {
+    val r = scala.util.Random
+    val x = r.nextInt(5000)
+
+    if (x > 4999) 3.0f
+    else if (x > 4000) 2.0f
+    else 1.0f
   }
 }
