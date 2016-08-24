@@ -34,8 +34,8 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       handleStartGameLoop(spawner, delay, players)
     case Event(EngagedWord(player, word), data: GameSessionData) =>
       handleEngagedWord(player, word, data)
-    case Event(FinishedWord(player, word), data: GameSessionData) =>
-      handleFinishedWord(player, word, data)
+    case Event(FinishedWord(player, word, keystrokes), data: GameSessionData) =>
+      handleFinishedWord(player, word, data, keystrokes)
     case Event(WordResponse(word), data: GameSessionData) =>
       handleWordResponse(word, data)
     case Event(OutOfWords(), _) =>
@@ -46,8 +46,15 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       handleGetServerStatus("Game running", players)
   }
 
+  onTransition {
+    case GameRunning -> GameOver => self ! GameEnded()
+  }
+
   when(GameOver) {
+    case Event(GameEnded(), data:Stats) =>
+      handleGameEnded(data)
     case Event(GetStats(), data:Stats) =>
+      println("Getting stats...")
       handleGetStats(data)
     case Event(GetServerStatus(), Stats(players)) =>
       handleGetServerStatus("Game ended", players)
@@ -68,7 +75,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       stay
     } else {
       println(s"#\t${player.path.name} connected")
-      val newPlayersList = data.players + (player -> Player(player, 0, false))
+      val newPlayersList = data.players + (player -> Player(player, false, PlayerStats(player, 0, List())))
       player ! ConnectionGranted("You made it!")
       broadcastEvent(PlayerConnected(player))(newPlayersList)
       broadcastEvent(PlayerList(newPlayersList.keys.toList))(newPlayersList)
@@ -115,7 +122,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       players get player match {
         case Some(p: Player) => {
           broadcastEvent(PlayerReady(player))(players)
-          stay using LobbyData(players = players + (player -> Player(player, p.score, true)))
+          stay using LobbyData(players = players + (player -> Player(player, true, p.stats)))
         }
         case _ => stay
       }
@@ -127,7 +134,7 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     players get player match {
       case Some(p: Player) => {
         broadcastEvent(PlayerUnready(player))(players)
-        stay using LobbyData(players = players + (player -> Player(player, p.score, false)))
+        stay using LobbyData(players = players + (player -> Player(player, false, p.stats)))
       }
       case _ => stay
     }
@@ -167,11 +174,11 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     stay
   }
 
-  def handleFinishedWord(player: ActorRef, word: GlobalWord, data: GameSessionData): GameServer.this.State = {
+  def handleFinishedWord(player: ActorRef, word: GlobalWord, data: GameSessionData, keystrokes:Int): GameServer.this.State = {
     println(s"The following word is finished ${word.text}")
     broadcastEvent(WordWinner(player, word))(data.players)
     stay using data.copy(engagedWords = removeByWord(word, data.engagedWords),
-                               players = updatePlayerScore(player, word, data.players))
+                               players = updatePlayerStats(player, word, data.players, keystrokes))
   }
 
   def handleEndGame(players: Map[ActorRef, Player]): GameServer.this.State = {
@@ -180,18 +187,22 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
     goto(GameOver) using Stats(players)
   }
 
+  def handleGameEnded(stats:Stats): GameServer.this.State = {
+    broadcastEvent(GameEnded())(stats.players)
+    stay
+  }
+
   def handleGetStats(stats: Stats): GameServer.this.State = {
     val statsList = stats.players.values.map(playerToPlayerStats).toList
+    println(statsList)
     statsList.foreach(s => println(s"\t"))
     sender ! StatsList(statsList)
     stay
   }
 
-  def playerToPlayerStats(player: Player): PlayerStats = {
-    PlayerStats(player.playerRef, player.score)
-  }
+  def playerToPlayerStats(player: Player): PlayerStats = player.stats
 
-  def updatePlayerScore(player: ActorRef, word: GlobalWord, players: Map[ActorRef, Player]): Map[ActorRef, Player] = {
+  def updatePlayerStats(player: ActorRef, word: GlobalWord, players: Map[ActorRef, Player], keystrokes:Int): Map[ActorRef, Player] = {
     val newScore = getScoreForWord(word)
     broadcastEvent(ScoreUpdated(player, newScore))(players)
     val p: Player = players get player match {
@@ -199,10 +210,21 @@ class GameServer(settings: ServerSettings, master: ActorRef) extends Actor with 
       case _ => null
     }
 
-    players + (player -> Player(player, p.score + newScore, p.ready))
+    val newStats = getPlayerStats(player, p.stats.score + newScore, word, keystrokes, p.stats)
+
+    players + (player -> Player(player, p.ready, newStats))
   }
 
   def getScoreForWord(word: GlobalWord): Int = (word.text.length.toFloat * word.multiplier).toInt
+
+  def getPlayerStats(player:ActorRef, score:Int, word:GlobalWord, keystrokes:Int, oldStats:PlayerStats):PlayerStats = {
+    PlayerStats(player, score, oldStats.wonWords :+ getFinishedWord(word, keystrokes))
+  }
+
+  def getFinishedWord(word:GlobalWord, keystrokes:Int): WonWord = {
+    val accuracy = word.text.length.toFloat/keystrokes.toFloat
+    WonWord(word, accuracy)
+  }
 
   def everyoneIsReady(player: ActorRef, players: Map[ActorRef, Player]): Boolean = {
     val everyoneExceptYou = players.filterKeys(_ != player)

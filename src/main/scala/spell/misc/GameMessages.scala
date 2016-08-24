@@ -14,7 +14,7 @@ case class Disconnect(player:ActorRef) extends GameMessage
 case class StartGame() extends GameMessage
 case class EndGame() extends GameMessage
 case class EngagedWord(player:ActorRef, word:GlobalWord) extends GameMessage
-case class FinishedWord(player:ActorRef, word:GlobalWord) extends GameMessage
+case class FinishedWord(player:ActorRef, word:GlobalWord, keystrokes:Int) extends GameMessage
 case class Ready(player:ActorRef) extends GameMessage
 case class UnReady(player:ActorRef) extends GameMessage
 case class GetStats() extends GameMessage

@@ -24,7 +24,6 @@ class WordSpawner extends Actor {
     } else {
       sender ! OutOfWords()
     }
-
   }
 
   def readFile(fileName:String):List[String] = {
@@ -55,8 +54,8 @@ class WordSpawner extends Actor {
     val r = scala.util.Random
     val x = r.nextInt(5000)
 
-    if (x > 4999) 3.0f
-    else if (x > 4000) 2.0f
+    if (x > 4800) 3.0f
+    else if (x > 4300) 2.0f
     else 1.0f
   }
 }

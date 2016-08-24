@@ -3,9 +3,10 @@ package spell.misc
 import akka.actor._
 import java.util.UUID
 
-case class Player(playerRef: ActorRef, score: Int, ready: Boolean)
-case class PlayerStats(player: ActorRef, score: Int)
+case class Player(playerRef: ActorRef, ready: Boolean, stats:PlayerStats)
+case class PlayerStats(player: ActorRef, score: Int, wonWords:List[WonWord])
 case class ServerSettings(host: ActorRef, name:String, maxPlayers:Int)
+case class WonWord(word:GlobalWord, accuracy:Float)
 
 sealed trait GameEntity
 case class GlobalWord(id: UUID, text:String, multiplier:Float) extends GameEntity
